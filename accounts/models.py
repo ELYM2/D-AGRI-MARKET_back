@@ -18,6 +18,8 @@ class UserProfile(models.Model):
     business_address = models.CharField(max_length=255, blank=True)
     business_city = models.CharField(max_length=128, blank=True)
     business_postal_code = models.CharField(max_length=32, blank=True)
+    latitude = models.FloatField(null=True, blank=True, help_text="Latitude de l'emplacement du vendeur")
+    longitude = models.FloatField(null=True, blank=True, help_text="Longitude de l'emplacement du vendeur")
     
     # Stats (calculated fields)
     total_sales = models.DecimalField(max_digits=10, decimal_places=2, default=0)

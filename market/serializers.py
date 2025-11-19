@@ -47,6 +47,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "price",
+            "old_price",
             "stock",
             "category",
             "category_name",
@@ -126,6 +127,69 @@ class OrderCreateSerializer(serializers.Serializer):
     shipping_address = serializers.CharField(max_length=500)
     shipping_city = serializers.CharField(max_length=100)
     shipping_postal_code = serializers.CharField(max_length=20)
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        
+        # Get user's cart
+        try:
+            cart = Cart.objects.get(user=user)
+        except Cart.DoesNotExist:
+            raise serializers.ValidationError("Votre panier est vide")
+            
+        if not cart.items.exists():
+            raise serializers.ValidationError("Votre panier est vide")
+
+        # Calculate total and check stock
+        total_amount = 0
+        for item in cart.items.all():
+            if item.product.stock < item.quantity:
+                raise serializers.ValidationError(f"Stock insuffisant pour {item.product.name}")
+            total_amount += item.product.price * item.quantity
+
+        # Create Order
+        order = Order.objects.create(
+            user=user,
+            total_amount=total_amount,
+            shipping_address=validated_data['shipping_address'],
+            shipping_city=validated_data['shipping_city'],
+            shipping_postal_code=validated_data['shipping_postal_code']
+        )
+
+        # Create OrderItems and update stock
+        for item in cart.items.all():
+            OrderItem.objects.create(
+                order=order,
+                product=item.product,
+                quantity=item.quantity,
+                price=item.product.price
+            )
+            # Decrement stock
+            item.product.stock -= item.quantity
+            item.product.save()
+            
+            # Create notification for seller
+            if item.product.owner != user:  # Don't notify if buying own product (testing)
+                Notification.objects.create(
+                    user=item.product.owner,
+                    title="Nouvelle commande",
+                    message=f"Votre produit {item.product.name} a été commandé (Qté: {item.quantity})",
+                    notification_type='order'
+                )
+
+        # Clear cart
+        cart.items.all().delete()
+        
+        # Create notification for buyer
+        Notification.objects.create(
+            user=user,
+            title="Commande confirmée",
+            message=f"Votre commande #{order.order_number} a été enregistrée avec succès.",
+            notification_type='order'
+        )
+        
+        return order
+
 
 
 class MessageSerializer(serializers.ModelSerializer):
