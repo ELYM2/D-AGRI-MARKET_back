@@ -199,22 +199,35 @@ class Message(models.Model):
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
         ('order', 'Commande'),
-        ('message', 'Message'),
         ('review', 'Avis'),
+        ('message', 'Message'),
         ('product', 'Produit'),
-        ('general', 'Général'),
+        ('system', 'Système'),
     ]
-
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="notifications", on_delete=models.CASCADE)
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='notifications', on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     message = models.TextField()
-    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='general')
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='system')
     is_read = models.BooleanField(default=False)
+    link = models.CharField(max_length=500, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    
     class Meta:
         ordering = ['-created_at']
-
+    
     def __str__(self):
-        return f"{self.user.username}: {self.title}"
+        return f"{self.title} - {self.user.username}"
 
+
+class Favorite(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='favorites', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, related_name='favorited_by', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['user', 'product']
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.product.name}"
