@@ -24,10 +24,20 @@ load_dotenv(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-0n7!zkakwh=f=v7&!805nw9!%-5*krudyjn49k@_unfh*y=z6i'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'change-me')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DJANGO_DEBUG', '0') == '1'
+
+AUTH_COOKIE_DOMAIN = os.getenv("AUTH_COOKIE_DOMAIN")
+AUTH_COOKIE_SECURE = os.getenv("AUTH_COOKIE_SECURE")
+if AUTH_COOKIE_SECURE is None:
+    AUTH_COOKIE_SECURE = not DEBUG
+else:
+    AUTH_COOKIE_SECURE = AUTH_COOKIE_SECURE == "1"
+AUTH_COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "Lax")
+ACCESS_TOKEN_COOKIE_NAME = os.getenv("ACCESS_TOKEN_COOKIE_NAME", "access")
+REFRESH_TOKEN_COOKIE_NAME = os.getenv("REFRESH_TOKEN_COOKIE_NAME", "refresh")
 
 ALLOWED_HOSTS = [
     'localhost',
@@ -48,6 +58,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'django_filters',
     'corsheaders',
+    'accounts',
     'api',
     'market',
 ]
@@ -141,6 +152,11 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Media files (User uploaded files)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -156,6 +172,8 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3010',
 ]
 
+CORS_ALLOW_CREDENTIALS = True
+
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
@@ -168,10 +186,10 @@ CSRF_TRUSTED_ORIGINS = [
 # DRF defaults (JWT auth)
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'accounts.authentication.CookieJWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
@@ -180,6 +198,15 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.AnonRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'user': '1000/day',
+        'anon': '200/day',
+        'auth': '20/minute',
+    },
 }
 
 from datetime import timedelta
