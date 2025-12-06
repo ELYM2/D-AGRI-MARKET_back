@@ -39,6 +39,7 @@ class ProductSerializer(serializers.ModelSerializer):
     average_rating = serializers.FloatField(read_only=True)
     review_count = serializers.IntegerField(read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
+    is_favorite = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -58,9 +59,20 @@ class ProductSerializer(serializers.ModelSerializer):
             "updated_at",
             "images",
             "average_rating",
+            "average_rating",
             "review_count",
+            "is_favorite",
         ]
-        read_only_fields = ["owner", "created_at", "updated_at", "average_rating", "review_count"]
+        read_only_fields = ["owner", "created_at", "updated_at", "average_rating", "review_count", "is_favorite"]
+
+    def get_is_favorite(self, obj):
+        try:
+            request = self.context.get('request')
+            if request and request.user.is_authenticated:
+                return Favorite.objects.filter(user=request.user, product=obj).exists()
+        except Exception:
+            pass
+        return False
 
 
 class CartItemSerializer(serializers.ModelSerializer):

@@ -3,7 +3,9 @@ from django.urls import path
 from .views import (
     CategoryViewSet, ProductViewSet, ProductImageViewSet,
     CartViewSet, OrderViewSet, ReviewViewSet,
-    MessageViewSet, NotificationViewSet, SellerStatsView
+    CartViewSet, OrderViewSet, ReviewViewSet,
+    MessageViewSet, NotificationViewSet, SellerStatsView,
+    FavoriteViewSet
 )
 
 
@@ -16,6 +18,7 @@ router.register(r'orders', OrderViewSet, basename='order')
 router.register(r'reviews', ReviewViewSet, basename='review')
 router.register(r'messages', MessageViewSet, basename='message')
 router.register(r'notifications', NotificationViewSet, basename='notification')
+router.register(r'favorites', FavoriteViewSet, basename='favorite')
 
 urlpatterns = [
     path('seller/stats/', SellerStatsView.as_view(), name='seller-stats'),

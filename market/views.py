@@ -15,7 +15,8 @@ from .models import (
 from .serializers import (
     CategorySerializer, ProductSerializer, ProductImageSerializer,
     CartSerializer, CartItemSerializer, OrderSerializer, OrderCreateSerializer,
-    OrderItemSerializer, ReviewSerializer, MessageSerializer, NotificationSerializer
+    OrderItemSerializer, ReviewSerializer, MessageSerializer, NotificationSerializer,
+    FavoriteSerializer
 )
 from .permissions import IsOwnerOrReadOnly, IsSellerOrReadOnly, IsOrderOwner, IsMessageParticipant
 
@@ -30,7 +31,10 @@ class CategoryViewSet(viewsets.ModelViewSet):
     ordering_fields = ["name"]
 
 
+from rest_framework.parsers import MultiPartParser, FormParser
+
 class ProductViewSet(viewsets.ModelViewSet):
+    parser_classes = (MultiPartParser, FormParser)
     queryset = Product.objects.select_related("category", "owner").prefetch_related("images", "reviews").all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
@@ -46,7 +50,12 @@ class ProductViewSet(viewsets.ModelViewSet):
     ordering_fields = ["-created_at", "price", "name", "stock"]
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        product = serializer.save(owner=self.request.user)
+        
+        # Handle uploaded images
+        images = self.request.FILES.getlist('uploaded_images')
+        for image in images:
+            ProductImage.objects.create(product=product, image=image)
 
     @action(detail=True, methods=['get'])
     def reviews(self, request, pk=None):
@@ -318,6 +327,31 @@ class NotificationViewSet(viewsets.ModelViewSet):
         return Response({"status": "Toutes les notifications sont marquées comme lues"})
 
 
+class FavoriteViewSet(viewsets.ModelViewSet):
+    serializer_class = FavoriteSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [OrderingFilter]
+    ordering_fields = ["-created_at"]
+
+    def get_queryset(self):
+        return Favorite.objects.filter(user=self.request.user).select_related('product')
+
+    @action(detail=False, methods=['post'])
+    def toggle(self, request):
+        """Toggle favorite status for a product"""
+        product_id = request.data.get('product_id')
+        if not product_id:
+            return Response({"error": "Product ID required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            favorite = Favorite.objects.get(user=request.user, product_id=product_id)
+            favorite.delete()
+            return Response({"status": "removed", "is_favorite": False})
+        except Favorite.DoesNotExist:
+            Favorite.objects.create(user=request.user, product_id=product_id)
+            return Response({"status": "added", "is_favorite": True})
+
+
 # Seller Statistics Views
 from rest_framework.views import APIView
 
@@ -372,8 +406,8 @@ class SellerStatsView(APIView):
             'active_orders': active_orders,
             'total_products': total_products,
             'total_customers': total_customers,
-            'products': ProductSerializer(products[:5], many=True).data,
-            'recent_orders': OrderSerializer(orders[:5], many=True).data,
+            'products': ProductSerializer(products[:5], many=True, context={'request': request}).data,
+            'recent_orders': OrderSerializer(orders[:5], many=True, context={'request': request}).data,
         }
         
         return Response(stats)

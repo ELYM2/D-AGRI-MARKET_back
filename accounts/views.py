@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -12,9 +13,27 @@ from .serializers import (
     UserSerializer,
     ChangePasswordSerializer,
     ProfileUpdateSerializer,
+    SellerSerializer,
 )
 from .throttles import AuthRateThrottle
 from .utils import set_jwt_cookies, clear_jwt_cookies
+from rest_framework import generics
+
+User = get_user_model()
+
+class SellerListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = SellerSerializer
+
+    def get_queryset(self):
+        return User.objects.filter(profile__is_seller=True)
+
+
+class SellerDetailView(generics.RetrieveAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = SellerSerializer
+    queryset = User.objects.filter(profile__is_seller=True)
+
 
 
 class RegisterView(APIView):
@@ -22,19 +41,27 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        # Issue JWT tokens on register for convenience
-        refresh = RefreshToken.for_user(user)
-        data = {
-            "user": UserSerializer(user).data,
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-        }
-        response = Response(data, status=status.HTTP_201_CREATED)
-        set_jwt_cookies(response, data["access"], data["refresh"])
-        return response
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            serializer = RegisterSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.save()
+            # Issue JWT tokens on register for convenience
+            refresh = RefreshToken.for_user(user)
+            data = {
+                "user": UserSerializer(user).data,
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+            }
+            response = Response(data, status=status.HTTP_201_CREATED)
+            set_jwt_cookies(response, data["access"], data["refresh"])
+            logger.info(f"User registered successfully: {user.username}")
+            return response
+        except Exception as e:
+            logger.error(f"Registration error: {str(e)}", exc_info=True)
+            raise
 
 
 class MeView(APIView):
