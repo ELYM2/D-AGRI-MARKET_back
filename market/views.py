@@ -211,6 +211,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         """Update order status (seller only)"""
         order = self.get_object()
         new_status = request.data.get('status')
+        reason = request.data.get('reason')
 
         # Check if user is seller of products in this order
         user_products = request.user.products.values_list('id', flat=True)
@@ -227,10 +228,13 @@ class OrderViewSet(viewsets.ModelViewSet):
             order.save()
             
             # Create notification for buyer
+            message = f"Votre commande est maintenant: {order.get_status_display()}"
+            if reason:
+                message += f". Motif: {reason}"
             Notification.objects.create(
                 user=order.user,
                 title=f"Commande {order.order_number} mise à jour",
-                message=f"Votre commande est maintenant: {order.get_status_display()}",
+                message=message,
                 notification_type='order'
             )
             
@@ -251,6 +255,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
     filterset_fields = ["product", "rating"]
     ordering_fields = ["-created_at", "rating"]
 
+    def update(self, request, *args, **kwargs):
+        """Restrict update to review owner"""
+        instance = self.get_object()
+        if instance.user != request.user:
+            return Response({"detail": "Non autorisé"}, status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         review = serializer.save(user=self.request.user)
         
@@ -261,6 +272,21 @@ class ReviewViewSet(viewsets.ModelViewSet):
             message=f"{self.request.user.username} a laissé un avis sur {review.product.name}",
             notification_type='review'
         )
+
+    @action(detail=True, methods=['post'])
+    def respond(self, request, pk=None):
+        """Seller response to a review"""
+        review = self.get_object()
+        if review.product.owner != request.user:
+            return Response({"detail": "Non autorisé"}, status=status.HTTP_403_FORBIDDEN)
+        response_text = request.data.get('response', '').strip()
+        if not response_text:
+            return Response({"detail": "Réponse requise"}, status=status.HTTP_400_BAD_REQUEST)
+        review.response = response_text
+        review.response_at = timezone.now()
+        review.save()
+        serializer = ReviewSerializer(review)
+        return Response(serializer.data)
 
 
 class MessageViewSet(viewsets.ModelViewSet):

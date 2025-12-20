@@ -33,11 +33,22 @@ class Category(models.Model):
 
 
 class Product(models.Model):
+    UNIT_CHOICES = [
+        ('kg', 'Kilogramme'),
+        ('g', 'Gramme'),
+        ('piece', 'Pièce'),
+        ('liter', 'Litre'),
+        ('bunch', 'Botte'),
+        ('bag', 'Sac'),
+        ('box', 'Boîte'),
+    ]
+    
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     old_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Prix avant promotion (optionnel)")
     stock = models.IntegerField(default=0)
+    unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='piece', help_text="Unité de vente")
     category = models.ForeignKey(Category, related_name="products", on_delete=models.CASCADE)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="products", on_delete=models.CASCADE)
     is_active = models.BooleanField(default=True)
@@ -171,6 +182,8 @@ class Review(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="reviews", on_delete=models.CASCADE)
     rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     comment = models.TextField(blank=True)
+    response = models.TextField(blank=True)
+    response_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

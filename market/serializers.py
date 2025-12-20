@@ -25,11 +25,13 @@ class ProductImageSerializer(serializers.ModelSerializer):
 class ReviewSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
     username = serializers.CharField(source='user.username', read_only=True)
+    response = serializers.CharField(required=False, allow_blank=True)
+    response_at = serializers.DateTimeField(read_only=True)
     
     class Meta:
         model = Review
-        fields = ["id", "product", "user", "username", "rating", "comment", "created_at", "updated_at"]
-        read_only_fields = ["created_at", "updated_at"]
+        fields = ["id", "product", "user", "username", "rating", "comment", "response", "response_at", "created_at", "updated_at"]
+        read_only_fields = ["created_at", "updated_at", "response", "response_at"]
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -50,6 +52,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "price",
             "old_price",
             "stock",
+            "unit",
             "category",
             "category_name",
             "owner",
@@ -58,7 +61,6 @@ class ProductSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "images",
-            "average_rating",
             "average_rating",
             "review_count",
             "is_favorite",

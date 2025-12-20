@@ -18,6 +18,8 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Load .env from project root if present (dev convenience)
 load_dotenv(BASE_DIR / ".env")
+# Also try to load .env located next to this settings file (keeps the default file where it currently lives)
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 
 # Quick-start development settings - unsuitable for production
