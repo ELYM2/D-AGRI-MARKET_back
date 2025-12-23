@@ -16,6 +16,7 @@ from .serializers import (
     SellerSerializer,
 )
 from .throttles import AuthRateThrottle
+from rest_framework_simplejwt.exceptions import TokenError
 from .utils import set_jwt_cookies, clear_jwt_cookies
 from rest_framework import generics
 
@@ -132,7 +133,12 @@ class CookieTokenRefreshView(TokenRefreshView):
             if cookie_refresh:
                 data["refresh"] = cookie_refresh
         serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError as exc:
+            response = Response({"refresh": [str(exc)]}, status=status.HTTP_401_UNAUTHORIZED)
+            clear_jwt_cookies(response)
+            return response
         response = Response(serializer.validated_data, status=status.HTTP_200_OK)
         set_jwt_cookies(response, serializer.validated_data.get("access"), serializer.validated_data.get("refresh"))
         return response

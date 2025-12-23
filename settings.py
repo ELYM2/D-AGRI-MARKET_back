@@ -41,10 +41,9 @@ AUTH_COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "Lax")
 ACCESS_TOKEN_COOKIE_NAME = os.getenv("ACCESS_TOKEN_COOKIE_NAME", "access")
 REFRESH_TOKEN_COOKIE_NAME = os.getenv("REFRESH_TOKEN_COOKIE_NAME", "refresh")
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-]
+default_allowed = ['localhost', '127.0.0.1']
+extra_hosts = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if host.strip()]
+ALLOWED_HOSTS = default_allowed + extra_hosts
 
 
 # Application definition
@@ -171,6 +170,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3005',
     'http://localhost:3010',
     'http://127.0.0.1:3010',
+    'https://unsalted-velda-multinucleolated.ngrok-free.dev',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -179,6 +179,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:3005',
+    'https://unsalted-velda-multinucleolated.ngrok-free.dev',
     'http://127.0.0.1:3005',
     'http://localhost:3010',
     'http://127.0.0.1:3010',
