@@ -380,6 +380,7 @@ class FavoriteViewSet(viewsets.ModelViewSet):
 
 # Seller Statistics Views
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
 class SellerStatsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -450,3 +451,40 @@ class SellerStatsView(APIView):
         }
         
         return Response(stats)
+
+
+class DeliveryFeeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    BASE_LATITUDE = 12.5
+    BASE_LONGITUDE = -1.5
+
+    def post(self, request):
+        latitude = self._parse_float(request.query_params.get("latitude") or request.data.get("latitude"))
+        longitude = self._parse_float(request.query_params.get("longitude") or request.data.get("longitude"))
+
+        if latitude is None or longitude is None:
+            return Response(
+                {"detail": "Latitude et longitude requises"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        distance_km = self._approx_distance(latitude, longitude)
+        fee = 500 + distance_km * 50
+
+        return Response({
+            "fee": round(fee),
+            "currency": "FCFA",
+            "distance_km": round(distance_km, 2),
+        })
+
+    def _parse_float(self, value):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _approx_distance(self, lat, lon):
+        lat_diff = abs(lat - self.BASE_LATITUDE)
+        lon_diff = abs(lon - self.BASE_LONGITUDE)
+        return ((lat_diff ** 2) + (lon_diff ** 2)) ** 0.5 * 111

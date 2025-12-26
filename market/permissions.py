@@ -37,7 +37,9 @@ class IsOrderOwner(permissions.BasePermission):
     """
 
     def has_object_permission(self, request, view, obj):
-        return obj.user == request.user
+        if obj.user == request.user:
+            return True
+        return obj.items.filter(product__owner=request.user).exists()
 
 
 class IsMessageParticipant(permissions.BasePermission):

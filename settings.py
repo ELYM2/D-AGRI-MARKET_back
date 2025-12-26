@@ -41,7 +41,7 @@ AUTH_COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "Lax")
 ACCESS_TOKEN_COOKIE_NAME = os.getenv("ACCESS_TOKEN_COOKIE_NAME", "access")
 REFRESH_TOKEN_COOKIE_NAME = os.getenv("REFRESH_TOKEN_COOKIE_NAME", "refresh")
 
-default_allowed = ['localhost', '127.0.0.1']
+default_allowed = ['localhost', '127.0.0.1', 'testserver']
 extra_hosts = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if host.strip()]
 ALLOWED_HOSTS = default_allowed + extra_hosts
 
