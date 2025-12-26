@@ -426,12 +426,25 @@ class SellerStatsView(APIView):
         total_customers = Order.objects.filter(
             items__product__owner=user
         ).values('user').distinct().count()
+
+        # Daily sales for the last 7 days (for chart)
+        daily_sales = []
+        for i in range(6, -1, -1):
+            date = today - timedelta(days=i)
+            day_name = date.strftime('%a') # Mon, Tue, etc.
+            day_sales = OrderItem.objects.filter(
+                product__owner=user,
+                order__created_at__date=date.date(),
+                order__status='delivered'
+            ).aggregate(total=Sum('price'))['total'] or 0
+            daily_sales.append({'name': day_name, 'sales': float(day_sales)})
         
         stats = {
             'sales_this_month': float(sales_this_month),
             'active_orders': active_orders,
             'total_products': total_products,
             'total_customers': total_customers,
+            'daily_sales': daily_sales,
             'products': ProductSerializer(products[:5], many=True, context={'request': request}).data,
             'recent_orders': OrderSerializer(orders[:5], many=True, context={'request': request}).data,
         }

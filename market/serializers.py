@@ -62,6 +62,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "updated_at",
             "images",
             "average_rating",
+            "average_rating",
             "review_count",
             "is_favorite",
         ]

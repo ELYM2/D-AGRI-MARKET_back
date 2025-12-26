@@ -154,7 +154,7 @@ STATIC_URL = 'static/'
 
 # Media files (User uploaded files)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = BASE_DIR.parent / 'media'
 
 
 # Default primary key field type
@@ -170,7 +170,6 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3005',
     'http://localhost:3010',
     'http://127.0.0.1:3010',
-    'https://unsalted-velda-multinucleolated.ngrok-free.dev',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -179,7 +178,6 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:3005',
-    'https://unsalted-velda-multinucleolated.ngrok-free.dev',
     'http://127.0.0.1:3005',
     'http://localhost:3010',
     'http://127.0.0.1:3010',
