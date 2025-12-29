@@ -171,7 +171,13 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3005',
     'http://localhost:3010',
     'http://127.0.0.1:3010',
+    'https://d-agri-market-frontend.onrender.com',
 ]
+
+# Add production frontend URL from environment variable
+FRONTEND_URL = os.getenv('FRONTEND_URL')
+if FRONTEND_URL:
+    CORS_ALLOWED_ORIGINS.append(FRONTEND_URL)
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -182,7 +188,13 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:3005',
     'http://localhost:3010',
     'http://127.0.0.1:3010',
+    'https://d-agri-market-back.onrender.com',
+    'https://d-agri-market-frontend.onrender.com',
 ]
+
+# Add production frontend URL from environment variable
+if FRONTEND_URL:
+    CSRF_TRUSTED_ORIGINS.append(FRONTEND_URL)
 
 # DRF defaults (JWT auth)
 REST_FRAMEWORK = {
