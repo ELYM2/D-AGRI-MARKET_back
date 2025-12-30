@@ -3,9 +3,8 @@ from django.urls import path
 from .views import (
     CategoryViewSet, ProductViewSet, ProductImageViewSet,
     CartViewSet, OrderViewSet, ReviewViewSet,
-    CartViewSet, OrderViewSet, ReviewViewSet,
     MessageViewSet, NotificationViewSet, SellerStatsView,
-    FavoriteViewSet, DeliveryFeeView
+    FavoriteViewSet, DeliveryFeeView, SellerOrderViewSet
 )
 
 
@@ -15,6 +14,7 @@ router.register(r'products', ProductViewSet, basename='product')
 router.register(r'product-images', ProductImageViewSet, basename='productimage')
 router.register(r'cart', CartViewSet, basename='cart')
 router.register(r'orders', OrderViewSet, basename='order')
+router.register(r'seller-orders', SellerOrderViewSet, basename='seller-order')  # New endpoint
 router.register(r'reviews', ReviewViewSet, basename='review')
 router.register(r'messages', MessageViewSet, basename='message')
 router.register(r'notifications', NotificationViewSet, basename='notification')

@@ -20,13 +20,21 @@ class RegisterSerializer(serializers.ModelSerializer):
     business_address = serializers.CharField(required=False, allow_blank=True)
     business_city = serializers.CharField(required=False, allow_blank=True)
     business_postal_code = serializers.CharField(required=False, allow_blank=True)
+    business_country = serializers.CharField(required=False, allow_blank=True)
+    
+    # Extra profile fields
+    phone = serializers.CharField(required=False, allow_blank=True)
+    address = serializers.CharField(required=False, allow_blank=True)
+    city = serializers.CharField(required=False, allow_blank=True)
+    postal_code = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
         fields = [
             "id", "username", "email", "password", "first_name", "last_name",
             "is_seller", "business_name", "business_description", 
-            "business_address", "business_city", "business_postal_code"
+            "business_address", "business_city", "business_postal_code", "business_country",
+            "phone", "address", "city", "postal_code"
         ]
 
     def create(self, validated_data):
@@ -39,6 +47,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         business_address = validated_data.pop("business_address", "")
         business_city = validated_data.pop("business_city", "")
         business_postal_code = validated_data.pop("business_postal_code", "")
+        business_country = validated_data.pop("business_country", "")
+        
+        phone = validated_data.pop("phone", "")
+        address = validated_data.pop("address", "")
+        city = validated_data.pop("city", "")
+        postal_code = validated_data.pop("postal_code", "")
         
         password = validated_data.pop("password")
         
@@ -66,6 +80,13 @@ class RegisterSerializer(serializers.ModelSerializer):
                 profile.business_address = business_address
                 profile.business_city = business_city
                 profile.business_postal_code = business_postal_code
+                profile.business_country = business_country
+            
+            if phone: profile.phone = phone
+            if address: profile.address = address
+            if city: profile.city = city
+            if postal_code: profile.postal_code = postal_code
+                
             profile.save()
             
         return user
@@ -76,7 +97,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = [
             "phone", "address", "city", "postal_code",
-            "is_seller", "business_name", "business_description", "seller_rating"
+            "is_seller", "business_name", "business_description", 
+            "business_address", "business_city", "business_postal_code", "business_country",
+            "min_order_amount", "delivery_time", "terms_of_sale",
+            "mon_open", "mon_close", "sat_open", "sat_close", "sun_open", "sun_close",
+            "seller_rating"
         ]
 
 
@@ -94,13 +119,26 @@ class SellerSerializer(serializers.ModelSerializer):
     description = serializers.CharField(source='profile.business_description', read_only=True)
     rating = serializers.FloatField(source='profile.seller_rating', read_only=True)
     city = serializers.CharField(source='profile.business_city', read_only=True)
+    country = serializers.CharField(source='profile.business_country', read_only=True)
     products_count = serializers.SerializerMethodField()
+
+    min_order_amount = serializers.DecimalField(source='profile.min_order_amount', read_only=True, max_digits=10, decimal_places=2)
+    delivery_time = serializers.CharField(source='profile.delivery_time', read_only=True)
+    terms_of_sale = serializers.CharField(source='profile.terms_of_sale', read_only=True)
+    mon_open = serializers.TimeField(source='profile.mon_open', read_only=True)
+    mon_close = serializers.TimeField(source='profile.mon_close', read_only=True)
+    sat_open = serializers.TimeField(source='profile.sat_open', read_only=True)
+    sat_close = serializers.TimeField(source='profile.sat_close', read_only=True)
+    sun_open = serializers.TimeField(source='profile.sun_open', read_only=True)
+    sun_close = serializers.TimeField(source='profile.sun_close', read_only=True)
 
     class Meta:
         model = User
         fields = [
             "id", "username", "first_name", "last_name", 
-            "business_name", "description", "rating", "city", "products_count"
+            "business_name", "description", "rating", "city", "country", "products_count",
+            "min_order_amount", "delivery_time", "terms_of_sale",
+            "mon_open", "mon_close", "sat_open", "sat_close", "sun_open", "sun_close"
         ]
 
     def get_products_count(self, obj):
@@ -122,15 +160,33 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
-    phone = serializers.CharField(required=False, allow_blank=True)
-    address = serializers.CharField(required=False, allow_blank=True)
-    city = serializers.CharField(required=False, allow_blank=True)
-    postal_code = serializers.CharField(required=False, allow_blank=True)
-    email = serializers.EmailField(required=False, allow_blank=True)
+    # Upgrade to seller
+    is_seller = serializers.BooleanField(required=False)
+    # Shop settings
+    business_name = serializers.CharField(required=False, allow_blank=True)
+    business_description = serializers.CharField(required=False, allow_blank=True)
+    business_address = serializers.CharField(required=False, allow_blank=True)
+    business_city = serializers.CharField(required=False, allow_blank=True)
+    business_postal_code = serializers.CharField(required=False, allow_blank=True)
+    business_country = serializers.CharField(required=False, allow_blank=True)
+    min_order_amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    delivery_time = serializers.CharField(required=False, allow_blank=True)
+    terms_of_sale = serializers.CharField(required=False, allow_blank=True)
+    mon_open = serializers.TimeField(required=False, allow_null=True)
+    mon_close = serializers.TimeField(required=False, allow_null=True)
+    sat_open = serializers.TimeField(required=False, allow_null=True)
+    sat_close = serializers.TimeField(required=False, allow_null=True)
+    sun_open = serializers.TimeField(required=False, allow_null=True)
+    sun_close = serializers.TimeField(required=False, allow_null=True)
 
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "email", "phone", "address", "city", "postal_code"]
+        fields = [
+            "first_name", "last_name", "email", "phone", "address", "city", "postal_code",
+            "is_seller", "business_name", "business_description", "business_address", "business_city", "business_postal_code", "business_country",
+            "min_order_amount", "delivery_time", "terms_of_sale",
+            "mon_open", "mon_close", "sat_open", "sat_close", "sun_open", "sun_close"
+        ]
 
     def validate_email(self, value):
         if not value:
@@ -143,7 +199,15 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         return value
 
     def update(self, instance, validated_data):
-        profile_fields = {field: validated_data.pop(field, None) for field in ["phone", "address", "city", "postal_code"]}
+        profile_fields = {
+            field: validated_data.pop(field, None) 
+            for field in [
+                "is_seller", "phone", "address", "city", "postal_code",
+                "business_name", "business_description", "business_address", "business_city", "business_postal_code", "business_country",
+                "min_order_amount", "delivery_time", "terms_of_sale",
+                "mon_open", "mon_close", "sat_open", "sat_close", "sun_open", "sun_close"
+            ]
+        }
         for attr, value in validated_data.items():
             if value is not None:
                 setattr(instance, attr, value)

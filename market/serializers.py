@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import (
     Category, Product, ProductImage, Cart, CartItem,
-    Order, OrderItem, Review, Message, Notification, Favorite
+    Order, OrderItem, SubOrder, Review, Message, Notification, Favorite
 )
 
 User = get_user_model()
@@ -113,8 +113,34 @@ class OrderItemSerializer(serializers.ModelSerializer):
         read_only_fields = ["price"]
 
 
+class SubOrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)
+    order_number = serializers.CharField(source='order.order_number', read_only=True)
+    user_name = serializers.CharField(source='order.user.username', read_only=True)
+    seller_name = serializers.CharField(source='seller.username', read_only=True)
+    shipping_city = serializers.CharField(source='order.shipping_city', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = SubOrder
+        fields = [
+            "id",
+            "order_number",
+            "user_name",
+            "seller_name",
+            "status",
+            "status_display",
+            "subtotal",
+            "shipping_city",
+            "items",
+            "created_at"
+        ]
+        read_only_fields = ["order_number", "user_name", "subtotal", "created_at"]
+
+
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
+    sub_orders = SubOrderSerializer(many=True, read_only=True)
     user_name = serializers.CharField(source='user.username', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     
@@ -132,6 +158,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "shipping_city",
             "shipping_postal_code",
             "items",
+            "sub_orders",
             "created_at",
             "updated_at",
         ]
@@ -157,12 +184,21 @@ class OrderCreateSerializer(serializers.Serializer):
 
         # Calculate total and check stock
         total_amount = 0
+        items_by_seller = {}
+
         for item in cart.items.all():
             if item.product.stock < item.quantity:
                 raise serializers.ValidationError(f"Stock insuffisant pour {item.product.name}")
+            
             total_amount += item.product.price * item.quantity
+            
+            # Group by seller
+            owner = item.product.owner
+            if owner not in items_by_seller:
+                items_by_seller[owner] = []
+            items_by_seller[owner].append(item)
 
-        # Create Order
+        # Create Parent Order
         order = Order.objects.create(
             user=user,
             total_amount=total_amount,
@@ -171,24 +207,35 @@ class OrderCreateSerializer(serializers.Serializer):
             shipping_postal_code=validated_data['shipping_postal_code']
         )
 
-        # Create OrderItems and update stock
-        for item in cart.items.all():
-            OrderItem.objects.create(
+        # Create SubOrders and OrderItems
+        for owner, items in items_by_seller.items():
+            sub_total = sum(item.product.price * item.quantity for item in items)
+            
+            sub_order = SubOrder.objects.create(
                 order=order,
-                product=item.product,
-                quantity=item.quantity,
-                price=item.product.price
+                seller=owner,
+                subtotal=sub_total,
+                status='pending'
             )
-            # Decrement stock
-            item.product.stock -= item.quantity
-            item.product.save()
+
+            for item in items:
+                OrderItem.objects.create(
+                    order=order,
+                    sub_order=sub_order,
+                    product=item.product,
+                    quantity=item.quantity,
+                    price=item.product.price
+                )
+                # Decrement stock
+                item.product.stock -= item.quantity
+                item.product.save()
             
             # Create notification for seller
-            if item.product.owner != user:  # Don't notify if buying own product (testing)
+            if owner != user:
                 Notification.objects.create(
-                    user=item.product.owner,
+                    user=owner,
                     title="Nouvelle commande",
-                    message=f"Votre produit {item.product.name} a été commandé (Qté: {item.quantity})",
+                    message=f"Vous avez reçu une nouvelle commande de {sub_total} FCFA (Cmd #{order.order_number})",
                     notification_type='order'
                 )
 
@@ -205,6 +252,31 @@ class OrderCreateSerializer(serializers.Serializer):
         
         return order
 
+
+
+
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.username', read_only=True)
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    
+    class Meta:
+        model = Review
+        fields = [
+            "id",
+            "product",
+            "product_name",
+            "user",
+            "user_name",
+            "rating",
+            "comment",
+            "response",
+            "response_at",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["user", "response", "response_at", "created_at", "updated_at"]
 
 
 class MessageSerializer(serializers.ModelSerializer):

@@ -163,8 +163,31 @@ class Order(models.Model):
         super().save(*args, **kwargs)
 
 
+class SubOrder(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'En attente'),
+        ('processing', 'En cours'),
+        ('delivered', 'Livré'),
+        ('cancelled', 'Annulé'),
+    ]
+
+    order = models.ForeignKey(Order, related_name="sub_orders", on_delete=models.CASCADE)
+    seller = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="seller_orders", on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"SubOrder {self.id} for {self.seller.username} (Order {self.order.order_number})"
+
+
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name="items", on_delete=models.CASCADE)
+    sub_order = models.ForeignKey(SubOrder, related_name="items", on_delete=models.CASCADE, null=True, blank=True)
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.IntegerField(validators=[MinValueValidator(1)])
     price = models.DecimalField(max_digits=10, decimal_places=2)  # Price at time of purchase

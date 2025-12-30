@@ -18,8 +18,22 @@ class UserProfile(models.Model):
     business_address = models.CharField(max_length=255, blank=True)
     business_city = models.CharField(max_length=128, blank=True)
     business_postal_code = models.CharField(max_length=32, blank=True)
+    business_country = models.CharField(max_length=128, blank=True)
     latitude = models.FloatField(null=True, blank=True, help_text="Latitude de l'emplacement du vendeur")
     longitude = models.FloatField(null=True, blank=True, help_text="Longitude de l'emplacement du vendeur")
+    
+    # Seller settings
+    min_order_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    delivery_time = models.CharField(max_length=100, blank=True)
+    terms_of_sale = models.TextField(blank=True)
+    
+    # Opening hours
+    mon_open = models.TimeField(null=True, blank=True)
+    mon_close = models.TimeField(null=True, blank=True)
+    sat_open = models.TimeField(null=True, blank=True)
+    sat_close = models.TimeField(null=True, blank=True)
+    sun_open = models.TimeField(null=True, blank=True)
+    sun_close = models.TimeField(null=True, blank=True)
     
     # Stats (calculated fields)
     total_sales = models.DecimalField(max_digits=10, decimal_places=2, default=0)

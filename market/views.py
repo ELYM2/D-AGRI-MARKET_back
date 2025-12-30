@@ -10,12 +10,13 @@ from datetime import timedelta
 
 from .models import (
     Category, Product, ProductImage, Cart, CartItem,
-    Order, OrderItem, Review, Message, Notification
+    Order, OrderItem, SubOrder, Review, Message, Notification,
+    Favorite
 )
 from .serializers import (
     CategorySerializer, ProductSerializer, ProductImageSerializer,
     CartSerializer, CartItemSerializer, OrderSerializer, OrderCreateSerializer,
-    OrderItemSerializer, ReviewSerializer, MessageSerializer, NotificationSerializer,
+    OrderItemSerializer, SubOrderSerializer, ReviewSerializer, MessageSerializer, NotificationSerializer,
     FavoriteSerializer
 )
 from .permissions import IsOwnerOrReadOnly, IsSellerOrReadOnly, IsOrderOwner, IsMessageParticipant
@@ -190,13 +191,8 @@ class OrderViewSet(viewsets.ModelViewSet):
     ordering_fields = ["-created_at"]
 
     def get_queryset(self):
-        user = self.request.user
-        if hasattr(user, 'profile') and user.profile.is_seller:
-            # Sellers can see orders containing their products
-            return Order.objects.filter(
-                Q(user=user) | Q(items__product__owner=user)
-            ).distinct().prefetch_related('items__product')
-        return Order.objects.filter(user=user).prefetch_related('items__product')
+        # Buyers see their consolidated orders
+        return Order.objects.filter(user=self.request.user).prefetch_related('items__product')
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -206,39 +202,47 @@ class OrderViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save()
 
+
+class SellerOrderViewSet(viewsets.ModelViewSet):
+    serializer_class = SubOrderSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ["status"]
+    ordering_fields = ["-created_at"]
+
+    def get_queryset(self):
+        # Sellers see their sub-orders
+        return SubOrder.objects.filter(seller=self.request.user).prefetch_related('items__product', 'order__user')
+
     @action(detail=True, methods=['post'])
     def update_status(self, request, pk=None):
-        """Update order status (seller only)"""
-        order = self.get_object()
+        """Update sub-order status (seller only)"""
+        sub_order = self.get_object()
         new_status = request.data.get('status')
         reason = request.data.get('reason')
 
-        # Check if user is seller of products in this order
-        user_products = request.user.products.values_list('id', flat=True)
-        order_product_ids = order.items.values_list('product_id', flat=True)
-        
-        if not any(pid in user_products for pid in order_product_ids):
-            return Response(
+        if sub_order.seller != request.user:
+             return Response(
                 {"error": "Non autorisé"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        if new_status in dict(Order.STATUS_CHOICES):
-            order.status = new_status
-            order.save()
+        if new_status in dict(SubOrder.STATUS_CHOICES):
+            sub_order.status = new_status
+            sub_order.save()
             
             # Create notification for buyer
-            message = f"Votre commande est maintenant: {order.get_status_display()}"
+            message = f"Votre commande du vendeur {sub_order.seller.username} est maintenant: {sub_order.get_status_display()}"
             if reason:
                 message += f". Motif: {reason}"
             Notification.objects.create(
-                user=order.user,
-                title=f"Commande {order.order_number} mise à jour",
+                user=sub_order.order.user,
+                title=f"Suivi Commande {sub_order.order.order_number}",
                 message=message,
                 notification_type='order'
             )
             
-            serializer = OrderSerializer(order)
+            serializer = SubOrderSerializer(sub_order)
             return Response(serializer.data)
         
         return Response(
@@ -254,6 +258,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ["product", "rating"]
     ordering_fields = ["-created_at", "rating"]
+
+    def get_queryset(self):
+        queryset = Review.objects.all()
+        mode = self.request.query_params.get('mode')
+        if mode == 'seller' and self.request.user.is_authenticated:
+            return queryset.filter(product__owner=self.request.user)
+        return queryset
 
     def update(self, request, *args, **kwargs):
         """Restrict update to review owner"""
