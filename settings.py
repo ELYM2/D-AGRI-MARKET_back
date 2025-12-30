@@ -34,11 +34,19 @@ DEBUG = os.getenv('DJANGO_DEBUG', '0') == '1'
 
 AUTH_COOKIE_DOMAIN = os.getenv("AUTH_COOKIE_DOMAIN")
 AUTH_COOKIE_SECURE = os.getenv("AUTH_COOKIE_SECURE")
+
 if AUTH_COOKIE_SECURE is None:
+    # Default to True in prod, False in debug
     AUTH_COOKIE_SECURE = not DEBUG
 else:
     AUTH_COOKIE_SECURE = AUTH_COOKIE_SECURE == "1"
-AUTH_COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "Lax")
+
+# In production (Secure=True), SameSite MUST be 'None' if domains are different
+# We default to 'Lax' for dev, but 'None' is safer for Render/Vercel split
+AUTH_COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE")
+if AUTH_COOKIE_SAMESITE is None:
+    AUTH_COOKIE_SAMESITE = "None" if AUTH_COOKIE_SECURE else "Lax"
+
 ACCESS_TOKEN_COOKIE_NAME = os.getenv("ACCESS_TOKEN_COOKIE_NAME", "access")
 REFRESH_TOKEN_COOKIE_NAME = os.getenv("REFRESH_TOKEN_COOKIE_NAME", "refresh")
 
