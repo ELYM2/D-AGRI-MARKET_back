@@ -107,11 +107,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(read_only=True)
-    is_seller = serializers.BooleanField(source='profile.is_seller', read_only=True)
+    is_seller = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ["id", "username", "email", "first_name", "last_name", "profile", "is_seller"]
+
+    def get_is_seller(self, obj):
+        try:
+            return obj.profile.is_seller
+        except Exception:
+            return False
 
 
 class SellerSerializer(serializers.ModelSerializer):

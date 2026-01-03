@@ -44,12 +44,16 @@ class UserProfile(models.Model):
     @property
     def seller_rating(self):
         """Calculate average rating from all product reviews"""
-        from market.models import Review
-        product_ids = self.user.products.values_list('id', flat=True)
-        reviews = Review.objects.filter(product_id__in=product_ids)
-        if reviews.exists():
-            return reviews.aggregate(models.Avg('rating'))['rating__avg']
-        return 0
+        try:
+            from market.models import Review
+            product_ids = self.user.products.values_list('id', flat=True)
+            reviews = Review.objects.filter(product_id__in=product_ids)
+            if reviews.exists():
+                rating = reviews.aggregate(models.Avg('rating'))['rating__avg']
+                return float(rating) if rating is not None else 0.0
+            return 0.0
+        except Exception:
+            return 0.0
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
