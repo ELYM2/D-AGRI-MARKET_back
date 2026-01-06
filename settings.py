@@ -188,7 +188,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3005',
     'http://localhost:3010',
     'http://127.0.0.1:3010',
-    'https://app-viz.onrender.com/',
+    'https://app-viz.onrender.com',
 ]
 
 # Add production frontend URL from environment variable
@@ -206,7 +206,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3010',
     'http://127.0.0.1:3010',
     'https://d-agri-market-back.onrender.com',
-    'https://app-viz.onrender.com/',
+    'https://app-viz.onrender.com',
 ]
 
 # Add production frontend URL from environment variable
