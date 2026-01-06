@@ -6,10 +6,7 @@ from .views import (
     ChangePasswordView,
     CookieTokenObtainPairView,
     CookieTokenRefreshView,
-    SellerListView,
-    SellerDetailView,
 )
-
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='auth-register'),
@@ -18,6 +15,4 @@ urlpatterns = [
     path('me/', MeView.as_view(), name='auth-me'),
     path('logout/', LogoutView.as_view(), name='auth-logout'),
     path('password/change/', ChangePasswordView.as_view(), name='auth-password-change'),
-    path('sellers/', SellerListView.as_view(), name='seller-list'),
-    path('sellers/<int:pk>/', SellerDetailView.as_view(), name='seller-detail'),
 ]

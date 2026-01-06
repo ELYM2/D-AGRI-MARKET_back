@@ -24,6 +24,8 @@ urlpatterns = [
     path('api/', include('api.urls')),
     path('api/auth/', include('accounts.urls')),
     path('api/', include('market.urls')),
+    # Sellers endpoints are public, not auth-related
+    path('api/sellers/', include('accounts.urls_sellers')),
 ]
 
 # Serve media files in development
