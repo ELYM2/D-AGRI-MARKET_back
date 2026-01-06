@@ -2,13 +2,15 @@
 Script pour créer des données de test pour D-AGRI MARKET
 """
 import os
+from pathlib import Path
 import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
 django.setup()
 
 from django.contrib.auth import get_user_model
-from market.models import Category, Product
+from django.core.files import File
+from market.models import Category, Product, ProductImage
 from accounts.models import UserProfile
 
 User = get_user_model()
@@ -76,6 +78,7 @@ def create_test_data():
             "price": 4.50,
             "stock": 50,
             "category": categories["Légumes"],
+            "image_filename": "WhatsApp Image 2025-12-20 at 18.21.11.jpeg",
         },
         {
             "name": "Carottes fraîches",
@@ -83,6 +86,7 @@ def create_test_data():
             "price": 3.20,
             "stock": 75,
             "category": categories["Légumes"],
+            "image_filename": "WhatsApp Image 2025-12-20 at 18.21.14.jpeg",
         },
         {
             "name": "Laitue biologique",
@@ -90,6 +94,7 @@ def create_test_data():
             "price": 2.80,
             "stock": 40,
             "category": categories["Légumes"],
+            "image_filename": "WhatsApp Image 2025-12-20 at 18.21.16.jpeg",
         },
         {
             "name": "Pommes de saison",
@@ -97,6 +102,7 @@ def create_test_data():
             "price": 5.99,
             "stock": 100,
             "category": categories["Fruits"],
+            "image_filename": "WhatsApp Image 2025-12-20 at 18.21.48.jpeg",
         },
         {
             "name": "Fromage fermier",
@@ -142,6 +148,19 @@ def create_test_data():
         },
     ]
     
+    seed_dirs = [
+        Path(__file__).resolve().parent / "seed_images",
+        Path(__file__).resolve().parent.parent / "seed_images",
+        Path(__file__).resolve().parent.parent,
+    ]
+
+    def find_seed_image(filename: str) -> Path | None:
+        for base in seed_dirs:
+            candidate = base / filename
+            if candidate.exists():
+                return candidate
+        return None
+
     for product_data in products_data:
         product, created = Product.objects.get_or_create(
             name=product_data["name"],
@@ -159,6 +178,25 @@ def create_test_data():
             print(f"  ✅ Créé: {product.name} - {product.price}€")
         else:
             print(f"  ℹ️  Existe déjà: {product.name}")
+
+        image_filename = product_data.get("image_filename")
+        if image_filename:
+            existing = product.images.filter(image__endswith=image_filename).exists()
+            if existing:
+                print(f"  ℹ️  Image déjà associée: {product.name}")
+            else:
+                image_path = find_seed_image(image_filename)
+                if image_path and image_path.exists():
+                    with image_path.open("rb") as fh:
+                        ProductImage.objects.create(
+                            product=product,
+                            image=File(fh, name=image_filename),
+                            is_primary=True,
+                            order=0,
+                        )
+                    print(f"  ✅ Image ajoutée: {product.name}")
+                else:
+                    print(f"  ⚠️  Image introuvable: {image_filename}")
     
     print("\n✨ Données de test créées avec succès!")
     print(f"\n📊 Résumé:")
