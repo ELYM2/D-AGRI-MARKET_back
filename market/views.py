@@ -83,6 +83,7 @@ class ProductImageViewSet(viewsets.ModelViewSet):
 class CartViewSet(viewsets.ModelViewSet):
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         return Cart.objects.filter(user=self.request.user).prefetch_related('items__product')
