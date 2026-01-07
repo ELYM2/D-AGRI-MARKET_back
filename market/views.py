@@ -471,7 +471,13 @@ class DeliveryFeeView(APIView):
     BASE_LATITUDE = 12.5
     BASE_LONGITUDE = -1.5
 
+    def get(self, request):
+        return self._handle_request(request)
+
     def post(self, request):
+        return self._handle_request(request)
+
+    def _handle_request(self, request):
         latitude = self._parse_float(request.query_params.get("latitude") or request.data.get("latitude"))
         longitude = self._parse_float(request.query_params.get("longitude") or request.data.get("longitude"))
 
@@ -500,3 +506,15 @@ class DeliveryFeeView(APIView):
         lat_diff = abs(lat - self.BASE_LATITUDE)
         lon_diff = abs(lon - self.BASE_LONGITUDE)
         return ((lat_diff ** 2) + (lon_diff ** 2)) ** 0.5 * 111
+
+class LegacyFavoriteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk=None):
+        try:
+            favorite = Favorite.objects.get(user=request.user, product_id=pk)
+            favorite.delete()
+            return Response({"status": "removed", "is_favorite": False})
+        except Favorite.DoesNotExist:
+            Favorite.objects.create(user=request.user, product_id=pk)
+            return Response({"status": "added", "is_favorite": True})

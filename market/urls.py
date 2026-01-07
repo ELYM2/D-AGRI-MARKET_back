@@ -4,7 +4,7 @@ from .views import (
     CategoryViewSet, ProductViewSet, ProductImageViewSet,
     CartViewSet, OrderViewSet, ReviewViewSet,
     MessageViewSet, NotificationViewSet, SellerStatsView,
-    FavoriteViewSet, DeliveryFeeView, SellerOrderViewSet
+    FavoriteViewSet, DeliveryFeeView, SellerOrderViewSet, LegacyFavoriteView
 )
 
 
@@ -24,4 +24,6 @@ urlpatterns = [
     path('seller/stats/', SellerStatsView.as_view(), name='seller-stats'),
     path('seller-stats/', SellerStatsView.as_view(), name='seller-stats-legacy'),
     path('cart/calculate_delivery_fee/', DeliveryFeeView.as_view(), name='calculate-delivery-fee'),
+    path('delivery/fee/', DeliveryFeeView.as_view(), name='calculate-delivery-fee-legacy'),
+    path('products/<int:pk>/favorite/', LegacyFavoriteView.as_view(), name='favorite-legacy'),
 ] + router.urls
