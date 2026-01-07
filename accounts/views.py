@@ -115,6 +115,10 @@ class CookieTokenObtainPairView(TokenObtainPairView):
     throttle_classes = [AuthRateThrottle]
     permission_classes = [AllowAny]
 
+    def get(self, request, *args, **kwargs):
+        serializer = self.get_serializer()
+        return Response(serializer.data)
+
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         if response.status_code == status.HTTP_200_OK:
