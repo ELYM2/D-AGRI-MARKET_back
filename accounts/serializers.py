@@ -168,6 +168,13 @@ class ChangePasswordSerializer(serializers.Serializer):
 class ProfileUpdateSerializer(serializers.ModelSerializer):
     # Upgrade to seller
     is_seller = serializers.BooleanField(required=False)
+    
+    # Profile fields (not in User model)
+    phone = serializers.CharField(required=False, allow_blank=True)
+    address = serializers.CharField(required=False, allow_blank=True)
+    city = serializers.CharField(required=False, allow_blank=True)
+    postal_code = serializers.CharField(required=False, allow_blank=True)
+
     # Shop settings
     business_name = serializers.CharField(required=False, allow_blank=True)
     business_description = serializers.CharField(required=False, allow_blank=True)
