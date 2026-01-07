@@ -21,11 +21,11 @@ def mobile_payment(request):
     En production, cette vue devrait appeler le prestataire (MTN/Orange) et gérer les callbacks.
     Ici, on valide directement et retourne une référence simulée.
     """
-    method = request.data.get("method")
-    phone = request.data.get("phone")
+    method = request.data.get("method") or request.data.get("provider")
+    phone = request.data.get("phone") or request.data.get("phone_number")
     amount = request.data.get("amount")
 
-    if method not in ["momo", "om"]:
+    if method not in ["momo", "om", "MTN", "ORANGE", "MTN_MOMO", "ORANGE_MONEY"]:
         return Response({"detail": "Méthode invalide"}, status=status.HTTP_400_BAD_REQUEST)
     if not phone:
         return Response({"detail": "Numéro requis"}, status=status.HTTP_400_BAD_REQUEST)
