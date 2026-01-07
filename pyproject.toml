@@ -19,4 +19,6 @@ dependencies = [
     "daphne>=4.2.1",
     "dj-database-url>=2.2.0",
     "psycopg2-binary>=2.9.10",
+    "django-cloudinary-storage>=0.3.0",
+    "cloudinary>=1.34.0",
 ]
